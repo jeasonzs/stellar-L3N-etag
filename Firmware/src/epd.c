@@ -9,6 +9,7 @@
 #include "epd_bw_213_ice.h"
 //#include "epd_bwr_154.h"
 #include "epd_bwr_296.h"
+#include "epd_bwr_266.h"
 #include "drivers.h"
 #include "stack/ble/ble.h"
 
@@ -22,8 +23,8 @@ extern const uint8_t ucMirror[];
 #include "font16zh.h"
 #include "font30.h"
 
-RAM uint8_t epd_model = 0; // 0 = Undetected, 1 = BW213, 2 = BWR213, 3 = BWR154, 4 = BW213ICE, 5 BWR296
-const char *epd_model_string[] = {"NC", "BW213", "BWR213", "BWR154", "213ICE", "BWR296"};
+RAM uint8_t epd_model = 0; // 0 = Undetected, 1 = BW213, 2 = BWR213, 3 = BWR154, 4 = BW213ICE, 5 = BWR296, 6 = BWR266
+const char *epd_model_string[] = {"NC", "BW213", "BWR213", "BWR154", "213ICE", "BWR296", "BWR266"};
 RAM uint8_t epd_update_state = 0;
 
 RAM uint8_t epd_scene = 2;
@@ -75,7 +76,9 @@ _attribute_ram_code_ void EPD_detect_model(void)
     WaitMs(10);
 
     // Here we neeed to detect it
-    if (EPD_BWR_296_detect())
+    if (EPD_BWR_266_detect()) {
+        epd_model = 6;
+    } else if (EPD_BWR_296_detect())
     {
         epd_model = 5;
     }
@@ -123,7 +126,7 @@ _attribute_ram_code_ uint8_t EPD_read_temp(void)
         epd_temperature = EPD_BWR_213_read_temp();
 //    else if (epd_model == 3)
 //        epd_temperature = EPD_BWR_154_read_temp();
-    else if (epd_model == 4 || epd_model == 5)
+    else if (epd_model == 4 || epd_model == 5 || epd_model == 6)
         epd_temperature = EPD_BW_213_ice_read_temp();
 
     EPD_POWER_OFF();
@@ -158,7 +161,8 @@ _attribute_ram_code_ void EPD_Display(unsigned char *image, unsigned char *red_i
         epd_temperature = EPD_BW_213_ice_Display(image, size, full_or_partial);
     else if (epd_model == 5)
         epd_temperature = EPD_BWR_296_Display_BWR(image, red_image, size, full_or_partial);
-        //epd_temperature = EPD_BWR_296_Display(image, size, full_or_partial);
+    else if (epd_model == 6)
+        epd_temperature = EPD_BWR_266_Display_BWR(image, red_image, size, full_or_partial);
 
     epd_temperature_is_read = 1;
     epd_update_state = 1;
@@ -175,7 +179,7 @@ _attribute_ram_code_ void epd_set_sleep(void)
         EPD_BWR_213_set_sleep();
 //    else if (epd_model == 3)
 //        EPD_BWR_154_set_sleep();
-    else if (epd_model == 4 || epd_model == 5)
+    else if (epd_model == 4 || epd_model == 5 || epd_model == 6)
         EPD_BW_213_ice_set_sleep();
 
     EPD_POWER_OFF();
@@ -296,6 +300,11 @@ _attribute_ram_code_ void epd_display(struct date_time _time, uint16_t battery_m
     {
         resolution_w = 296;
         resolution_h = 128;
+    }
+    else if (epd_model == 6)
+    {
+        resolution_w = 296;
+        resolution_h = 152;
     }
 
     epd_clear();
