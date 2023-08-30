@@ -7,7 +7,7 @@ ifeq ($(OS), Windows_NT)
 else
 	TC32_COMPILER_PATH := ./tc32_linux/bin/
 	WINDOWS_PREFIX :=
-	LINUX_CHMOD := chmod 777 -R ./tc32_linux/
+	LINUX_CHMOD := 
 endif
 
 LIBS :=  -llt_8258
