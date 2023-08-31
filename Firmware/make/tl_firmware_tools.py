@@ -25,10 +25,9 @@ def add_crc(args):
     file_content = fp.read()
     crc32_result = zlib.crc32(file_content)
 
-    fp.seek(0, 2)
-    fp.write(struct.pack('>I', crc32_result))
-
     print("Firmware CRC32: " + hex(crc32_result))
+    fp.seek(0, 2)
+    fp.write(struct.pack('>I', crc32_result & 0xffffffff))
 
     fp.close()
 

@@ -4,11 +4,11 @@
 #include "main.h"
 #include "epd.h"
 #include "epd_spi.h"
-#include "epd_bw_213.h"
-#include "epd_bwr_213.h"
-#include "epd_bw_213_ice.h"
+// #include "epd_bw_213.h"
+// #include "epd_bwr_213.h"
+// #include "epd_bw_213_ice.h"
 //#include "epd_bwr_154.h"
-#include "epd_bwr_296.h"
+// #include "epd_bwr_296.h"
 #include "epd_bwr_266.h"
 #include "drivers.h"
 #include "stack/ble/ble.h"
@@ -76,28 +76,31 @@ _attribute_ram_code_ void EPD_detect_model(void)
     WaitMs(10);
 
     // Here we neeed to detect it
-    if (EPD_BWR_266_detect()) {
-        epd_model = 6;
-    } else if (EPD_BWR_296_detect())
-    {
-        epd_model = 5;
-    }
-    else if (EPD_BWR_213_detect())
-    {
-        epd_model = 2;
-    }
-//    else if (EPD_BWR_154_detect())// Right now this will never trigger, the 154 is same to 213BWR right now.
-//    {
-//        epd_model = 3;
-//    }
-    else if (EPD_BW_213_ice_detect())
-    {
-        epd_model = 4;
-    }
-    else
-    {
-        epd_model = 1;
-    }
+//     if (EPD_BWR_266_detect()) {
+//         epd_model = 6;
+//     } else if (EPD_BWR_296_detect())
+//     {
+//         epd_model = 5;
+//     }
+//     else if (EPD_BWR_213_detect())
+//     {
+//         epd_model = 2;
+//     }
+// //    else if (EPD_BWR_154_detect())// Right now this will never trigger, the 154 is same to 213BWR right now.
+// //    {
+// //        epd_model = 3;
+// //    }
+//     else if (EPD_BW_213_ice_detect())
+//     {
+//         epd_model = 4;
+//     }
+//     else
+//     {
+//         epd_model = 1;
+//     }
+
+    EPD_BWR_266_detect();
+    epd_model = 6;
 
     EPD_POWER_OFF();
 }
@@ -120,14 +123,15 @@ _attribute_ram_code_ uint8_t EPD_read_temp(void)
     gpio_write(EPD_RESET, 1);
     WaitMs(10);
 
-    if (epd_model == 1)
-        epd_temperature = EPD_BW_213_read_temp();
-    else if (epd_model == 2)
-        epd_temperature = EPD_BWR_213_read_temp();
-//    else if (epd_model == 3)
-//        epd_temperature = EPD_BWR_154_read_temp();
-    else if (epd_model == 4 || epd_model == 5 || epd_model == 6)
-        epd_temperature = EPD_BW_213_ice_read_temp();
+//     if (epd_model == 1)
+//         epd_temperature = EPD_BW_213_read_temp();
+//     else if (epd_model == 2)
+//         epd_temperature = EPD_BWR_213_read_temp();
+// //    else if (epd_model == 3)
+// //        epd_temperature = EPD_BWR_154_read_temp();
+//     else if (epd_model == 4 || epd_model == 5 || epd_model == 6)
+//         epd_temperature = EPD_BW_213_ice_read_temp();
+    epd_temperature = EPD_BWR_266_read_temp();
 
     EPD_POWER_OFF();
 
@@ -151,18 +155,19 @@ _attribute_ram_code_ void EPD_Display(unsigned char *image, unsigned char *red_i
     gpio_write(EPD_RESET, 1);
     WaitMs(10);
 
-    if (epd_model == 1)
-        epd_temperature = EPD_BW_213_Display(image, size, full_or_partial);
-    else if (epd_model == 2)
-        epd_temperature = EPD_BWR_213_Display(image, size, full_or_partial);
-//    else if (epd_model == 3)
-//        epd_temperature = EPD_BWR_154_Display(image, size, full_or_partial);
-    else if (epd_model == 4)
-        epd_temperature = EPD_BW_213_ice_Display(image, size, full_or_partial);
-    else if (epd_model == 5)
-        epd_temperature = EPD_BWR_296_Display_BWR(image, red_image, size, full_or_partial);
-    else if (epd_model == 6)
-        epd_temperature = EPD_BWR_266_Display_BWR(image, red_image, size, full_or_partial);
+//     if (epd_model == 1)
+//         epd_temperature = EPD_BW_213_Display(image, size, full_or_partial);
+//     else if (epd_model == 2)
+//         epd_temperature = EPD_BWR_213_Display(image, size, full_or_partial);
+// //    else if (epd_model == 3)
+// //        epd_temperature = EPD_BWR_154_Display(image, size, full_or_partial);
+//     else if (epd_model == 4)
+//         epd_temperature = EPD_BW_213_ice_Display(image, size, full_or_partial);
+//     else if (epd_model == 5)
+//         epd_temperature = EPD_BWR_296_Display_BWR(image, red_image, size, full_or_partial);
+//     else if (epd_model == 6)
+//         epd_temperature = EPD_BWR_266_Display_BWR(image, red_image, size, full_or_partial);
+    epd_temperature = EPD_BWR_266_Display_BWR(image, red_image, size, full_or_partial);
 
     epd_temperature_is_read = 1;
     epd_update_state = 1;
@@ -173,14 +178,15 @@ _attribute_ram_code_ void epd_set_sleep(void)
     if (!epd_model)
         EPD_detect_model();
 
-    if (epd_model == 1)
-        EPD_BW_213_set_sleep();
-    else if (epd_model == 2)
-        EPD_BWR_213_set_sleep();
-//    else if (epd_model == 3)
-//        EPD_BWR_154_set_sleep();
-    else if (epd_model == 4 || epd_model == 5 || epd_model == 6)
-        EPD_BW_213_ice_set_sleep();
+//     if (epd_model == 1)
+//         EPD_BW_213_set_sleep();
+//     else if (epd_model == 2)
+//         EPD_BWR_213_set_sleep();
+// //    else if (epd_model == 3)
+// //        EPD_BWR_154_set_sleep();
+//     else if (epd_model == 4 || epd_model == 5 || epd_model == 6)
+//         EPD_BW_213_ice_set_sleep();
+    EPD_BWR_266_set_sleep();
 
     EPD_POWER_OFF();
     epd_update_state = 0;
