@@ -1,0 +1,182 @@
+#include "epd.h"
+
+#include "drivers.h"
+
+#include "epd_if.h"
+
+const unsigned int kWidth = 296;
+const unsigned int kHeight = 152;
+
+static const unsigned char kLutData[159] = {
+  0x00,0x40,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x80,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x40,0x40,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x0A,0x00,0x00,0x00,0x00,0x00,0x02,
+  0x01,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x01,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x22,0x22,0x22,0x22,0x22,0x22,
+  0x00,0x00,0x00,
+  0x22,0x17,0x41,0xB0,0x32,0x36,
+};  
+
+static EPD epd;
+
+void send_command(unsigned char command) {
+  epd_mode_cmd();
+  epd_spi_write(command);
+}
+
+void send_data(unsigned char data) {
+  epd_mode_cmd();
+  epd_spi_write(data);
+}
+
+int wait_idle(unsigned int timeout) {
+  unsigned long timeout_start = clock_time();
+  unsigned long timeout_ticks = timeout * CLOCK_16M_SYS_TIMER_CLK_1MS;
+  WaitMs(1);
+  while (epd_is_busy()) {
+    if (clock_time() - timeout_start >= timeout_ticks) {
+      return -1;
+    }
+  }
+  return 0;
+}
+
+void load_lut(void) {
+	send_command(0x32);
+	for (int i = 0; i < 153; i++) {
+		send_data(kLutData[i]);
+	} 
+	wait_idle(100);
+}
+
+void init(void) {
+  epd_init();
+  // Hard reset
+	epd_reset();
+	wait_idle(100);
+  // Soft reset
+	send_command(0x12);
+	wait_idle(100);
+	// Y increment, X increment
+	send_command(0x11);
+	send_data(0x01);
+	// Set RamX-address Start/End position
+	send_command(0x44);
+	send_data(0x00);	
+	send_data(kWidth / 8 - 1);
+	// Set RamY-address Start/End position
+	send_command(0x45);
+	send_data((kHeight & 0xff) - 1);
+	send_data((kHeight & 0x100) >> 8);
+	send_data(0);
+	send_data(0);
+
+	wait_idle(100);
+}
+
+void init_partial(void) {
+  epd_init();
+  // Hard reset
+	epd_reset();
+	wait_idle(100);
+  // Soft reset
+	send_command(0x12);
+	wait_idle(100);
+  // LUT
+  load_lut();
+  send_command(0x37);
+  send_data(0x00);
+  send_data(0x00);
+  send_data(0x00);
+  send_data(0x00);
+  send_data(0x00);
+  send_data(0x40);
+  send_data(0x00);
+  send_data(0x00);
+  send_data(0x00);
+  send_data(0x00);
+	// Y increment, X increment
+	send_command(0x11);
+	send_data(0x01);
+	// Set RamX-address Start/End position
+	send_command(0x44);
+	send_data(0x00);	
+	send_data(kWidth / 8 - 1);
+	// Set RamY-address Start/End position
+	send_command(0x45);
+	send_data((kHeight & 0xff) - 1);
+	send_data((kHeight & 0x100) >> 8);
+	send_data(0);
+	send_data(0);
+
+  send_command(0x3C); 
+  send_data(0x80);   
+
+  send_command(0x22); 
+  send_data(0xcf); 
+  send_command(0x20);
+
+	wait_idle(100);
+}
+
+void load_bw_image(unsigned char *image) {
+  send_command(0x4E);
+  send_data(0x00);
+  // Set RAM Y address
+  send_command(0x4F);
+  send_data(kHeight & 0xff);
+  send_data((kHeight & 0x100) >> 8);
+
+  int size = kWidth / 8 * kWidth;
+  send_command(0x24);
+  for (int i = 0; i < size; i++) {
+    send_data(image[i]);
+  }
+  WaitMs(2);
+}
+
+void load_red_image(unsigned char *image) {
+  send_command(0x4E);
+  send_data(0x00);
+  // Set RAM Y address
+  send_command(0x4F);
+  send_data(kHeight & 0xff);
+  send_data((kHeight & 0x100) >> 8);
+
+  int size = kWidth / 8 * kWidth;
+  send_command(0x26);
+  for (int i = 0; i < size; i++) {
+    send_data(image[i]);
+  }
+  WaitMs(2);
+}
+
+void display(void) {
+  send_command(0x20);
+  wait_idle(100);
+}
+
+EPD* create_epd_2in66() {
+  epd.width = kWidth;
+  epd.height = kHeight;
+  epd.init = &init;
+  epd.init_partial = &init_partial;
+  epd.wait_idle = &wait_idle;
+  epd.load_bw_image = &load_bw_image;
+  epd.load_red_image = &load_red_image;
+  epd.display = &display;
+  return &epd;
+}

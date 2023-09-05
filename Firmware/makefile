@@ -16,7 +16,7 @@ TEL_PATH := ./
 
 PROJECT_NAME := ATC_Paper
 
-PROJECT_PATH := ./src
+PROJECT_PATH := ./app
 PROJECT_PATH_STATIC := ./static_src
 OUT_PATH :=./out
 
